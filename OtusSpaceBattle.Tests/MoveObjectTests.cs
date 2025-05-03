@@ -1,4 +1,5 @@
-using OtusSpaceBattle;
+using OtusSpaceBattle.Adapters;
+using OtusSpaceBattle.Commands;
 using OtusSpaceBattle.Interfaces;
 using OtusSpaceBattle.Models;
 using System;
@@ -11,51 +12,58 @@ namespace OtusSpaceBattle.Tests
         [Fact]
         public void CorrectlyMoveGameObject()
         {
+            // Arrange
             IUObject gameObject = new Spaceship();
             gameObject.SetProperty(nameof(IMovableObject.Position), (12, 5));
-            gameObject.SetProperty(Constants.VELOCITY, 10);
+            gameObject.SetProperty(Constants.Velocity, 10);
             gameObject.SetProperty(nameof(IRotatableObject.DirectionsCount), 8);
             gameObject.SetProperty(nameof(IRotatableObject.Direction), 3);
-            IMovableObject moveCommand = new MovingObjectAdapter(gameObject);
+            ICommand cm = new MoveCommand(new MovingObjectAdapter(gameObject), gameObject);
+            // Act
+            cm.Execute();
             ValueTuple<int, int> expectedPosition = (5, 12);
-
-            moveCommand.Execute();
-
+            // Assert
             Assert.Equal(expectedPosition, gameObject.GetProperty(nameof(IMovableObject.Position)));
         }
 
         [Fact]
         public void DontSetPosition()
         {
+            // Arrange
             IUObject gameObject = new Spaceship();
-            IMovableObject moveCommand = new MovingObjectAdapter(gameObject);
+            ICommand cm = new MoveCommand(new MovingObjectAdapter(gameObject), gameObject);
 
-            Assert.Throws<KeyNotFoundException>(moveCommand.Execute);
+            // Act & assert
+            Assert.Throws<KeyNotFoundException>(cm.Execute);
         }
 
         [Fact]
         public void DontSetVelocity()
         {
+            // Arrange
             IUObject gameObject = new Spaceship();
             gameObject.SetProperty(nameof(IMovableObject.Position), (12, 5));
             gameObject.SetProperty(nameof(IRotatableObject.DirectionsCount), 8);
             gameObject.SetProperty(nameof(IRotatableObject.Direction), 3);
-            IMovableObject moveCommand = new MovingObjectAdapter(gameObject);
+            ICommand cm = new MoveCommand(new MovingObjectAdapter(gameObject), gameObject);
 
-            Assert.Throws<KeyNotFoundException>(moveCommand.Execute);
+            // Act & assert
+            Assert.Throws<KeyNotFoundException>(cm.Execute);
         }
 
         [Fact]
         public void DontChangePosition()
         {
+            // Arrange
             IUObject gameObject = new Spaceship();
             gameObject.SetProperty(nameof(IMovableObject.Position), (12, 5));
-            gameObject.SetProperty(Constants.VELOCITY, 10);
+            gameObject.SetProperty(Constants.Velocity, 10);
             gameObject.SetProperty(nameof(IRotatableObject.DirectionsCount), 0);
             gameObject.SetProperty(nameof(IRotatableObject.Direction), 3);
-            IMovableObject moveCommand = new MovingObjectAdapter(gameObject);
+            ICommand cm = new MoveCommand(new MovingObjectAdapter(gameObject), gameObject);
 
-            Assert.Throws<OverflowException>(moveCommand.Execute);
+            // Act & assert
+            Assert.Throws<OverflowException>(cm.Execute);
         }
     }
 }

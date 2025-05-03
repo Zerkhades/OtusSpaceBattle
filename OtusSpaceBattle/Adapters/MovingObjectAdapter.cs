@@ -1,13 +1,15 @@
 ﻿using Microsoft.VisualBasic;
 using OtusSpaceBattle.Interfaces;
+using OtusSpaceBattle.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Constants = OtusSpaceBattle.Models.Constants;
 
-namespace OtusSpaceBattle.Models
+namespace OtusSpaceBattle.Adapters
 {
     public class MovingObjectAdapter : IMovableObject
     {
@@ -24,12 +26,12 @@ namespace OtusSpaceBattle.Models
             set => gameObject.SetProperty(nameof(Position), value);
         }
 
-        public ValueTuple<int, int> CalculatedVelocity
+        public ValueTuple<int, int> Velocity
         {
             get
             {
                 int currentDirection = (int)gameObject.GetProperty(nameof(IRotatableObject.Direction));
-                int speed = (int)gameObject.GetProperty(Constants.VELOCITY);
+                int speed = (int)gameObject.GetProperty(Constants.Velocity);
                 int directionsCount = (int)gameObject.GetProperty(nameof(IRotatableObject.DirectionsCount));
                 double degree = (double)currentDirection / directionsCount * 360;
                 var (sin, cos) = Math.SinCos(Math.PI * degree / 180.0);
@@ -38,12 +40,6 @@ namespace OtusSpaceBattle.Models
                     Convert.ToInt32(speed * sin)
                 );
             }
-        }
-        public void Execute()
-        {
-            var calculedVelocity = CalculatedVelocity;
-            gameObject.SetProperty(nameof(Position),
-                (Position.Item1 + calculedVelocity.Item1, Position.Item2 + calculedVelocity.Item2));
         }
     }
 }

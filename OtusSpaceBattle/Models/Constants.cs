@@ -8,6 +8,6 @@ namespace OtusSpaceBattle.Models
 {
     public static class Constants
     {
-        public static readonly string VELOCITY = "Velocity";
+        public static readonly string Velocity = "Velocity";
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace OtusSpaceBattle.Interfaces
 {
-    public interface IRotatableObject : ICommand
+    public interface IRotatableObject
     {
         /// <summary>
         /// Текущее положение

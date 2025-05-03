@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OtusSpaceBattle.Models
+namespace OtusSpaceBattle.Adapters
 {
     public class RotatingObjectAdapter : IRotatableObject
     {
@@ -28,13 +28,5 @@ namespace OtusSpaceBattle.Models
         public int DirectionsCount =>
             (int)gameObject.GetProperty(nameof(DirectionsCount));
 
-        public void Execute()
-        {
-            if (DirectionsCountPerStep < 1)
-                throw new Exception("Кол-во поворотов за шаг не может быть меньше 1");
-            if (DirectionsCount < 1)
-                throw new Exception("Общее кол-во углов не может быть меньше 1");
-            gameObject.SetProperty(nameof(Direction), (Direction + DirectionsCountPerStep) % DirectionsCount);
-        }
     }
 }

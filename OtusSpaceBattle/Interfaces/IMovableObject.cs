@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace OtusSpaceBattle.Interfaces
 {
-    public interface IMovableObject : ICommand
+    public interface IMovableObject
     {
         /// <summary>
         /// Текущая позиция объекта на плоскости (x, y)
@@ -18,6 +18,6 @@ namespace OtusSpaceBattle.Interfaces
         /// Вычисленная скорость объекта с учётом направления
         /// </summary>
         /// <returns></returns>
-        ValueTuple<int, int> CalculatedVelocity { get; }
+        ValueTuple<int, int> Velocity { get; }
     }
 }

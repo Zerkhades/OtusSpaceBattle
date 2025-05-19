@@ -1,4 +1,5 @@
-﻿using OtusSpaceBattle.Interfaces;
+﻿using OtusSpaceBattle.Infrastructure;
+using OtusSpaceBattle.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,10 +20,11 @@ namespace OtusSpaceBattle.Commands
 
         public void Execute()
         {
-            var calculedVelocity = movableObject.Velocity;
-            gameObject.SetProperty(nameof(movableObject.Position),
-                (movableObject.Position.Item1 + calculedVelocity.Item1,
-                movableObject.Position.Item2 + calculedVelocity.Item2));
+            var velocity = movableObject.Velocity;
+            var position = movableObject.Position;
+            var newPosition = (position.Item1 + velocity.Item1, position.Item2 + velocity.Item2);
+            gameObject.SetProperty(nameof(movableObject.Position), newPosition);
+
         }
     }
 }

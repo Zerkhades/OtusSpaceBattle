@@ -1,5 +1,7 @@
-﻿using OtusSpaceBattle.Adapters;
+﻿using Moq;
+using OtusSpaceBattle.Adapters;
 using OtusSpaceBattle.Commands;
+using OtusSpaceBattle.Infrastructure;
 using OtusSpaceBattle.Interfaces;
 using OtusSpaceBattle.Models;
 using System;
@@ -12,78 +14,89 @@ namespace OtusSpaceBattle.Tests
 {
     public class RotateObjectTests
     {
+        public RotateObjectTests()
+        {
+        }
 
         [Fact]
         public void CorrectlyRotateGameObject()
         {
-            IUObject gameObject = new Spaceship();
-            gameObject.SetProperty(nameof(IRotatableObject.Direction), 1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCountPerStep), 1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCount), 8);
+            // Arrange
+            var mockUObject = new Mock<IUObject>();
+            int direction = 1;
+            int directionsCountPerStep = 1;
+            int directionsCount = 8;
+            int setDirection = direction;
 
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(gameObject), gameObject);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(() => setDirection);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Returns(directionsCountPerStep);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
+            mockUObject.Setup(x => x.SetProperty(nameof(IRotatableObject.Direction), It.IsAny<object>()))
+                .Callback<string, object>((name, value) => setDirection = (int)value);
+
+            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(mockUObject.Object), mockUObject.Object);
             int expectedDirection = 3;
-
+            // Act
             for (int i = 0; i < 10; i++)
                 rotateCommand.Execute();
-
-            Assert.Equal(expectedDirection, gameObject.GetProperty(nameof(IRotatableObject.Direction)));
+            // Assert
+            Assert.Equal(expectedDirection, setDirection);
         }
 
-        [Fact]
-        public void DontSetDirection()
+        [Theory]
+        [InlineData(nameof(IRotatableObject.Direction))]
+        [InlineData(nameof(IRotatableObject.DirectionsCountPerStep))]
+        [InlineData(nameof(IRotatableObject.DirectionsCount))]
+        public void MissingRequiredPropertyThrowsException(string missingProperty)
         {
-            IUObject gameObject = new Spaceship();
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCountPerStep), 1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCount), 8);
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(gameObject), gameObject);
+            // Arrange
+            var mockUObject = new Mock<IUObject>();
+            int direction = 1;
+            int directionsCountPerStep = 1;
+            int directionsCount = 8;
 
+            if (missingProperty != nameof(IRotatableObject.Direction))
+                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(direction);
+            else
+                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Throws<KeyNotFoundException>();
+
+            if (missingProperty != nameof(IRotatableObject.DirectionsCountPerStep))
+                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Returns(directionsCountPerStep);
+            else
+                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Throws<KeyNotFoundException>();
+
+            if (missingProperty != nameof(IRotatableObject.DirectionsCount))
+                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
+            else
+                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Throws<KeyNotFoundException>();
+
+            mockUObject.Setup(x => x.SetProperty(nameof(IRotatableObject.Direction), It.IsAny<object>()));
+
+            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(mockUObject.Object), mockUObject.Object);
+            // Act & Assert
             Assert.Throws<KeyNotFoundException>(rotateCommand.Execute);
         }
 
-        [Fact]
-        public void DontSetDirectionsCountPerStep()
+        [Theory]
+        [InlineData(nameof(IRotatableObject.DirectionsCount), -2)]
+        [InlineData(nameof(IRotatableObject.DirectionsCountPerStep), -1)]
+        public void InvalidPropertyValuesThrowException(string propertyName, object invalidValue)
         {
-            IUObject gameObject = new Spaceship();
-            gameObject.SetProperty(nameof(IRotatableObject.Direction), 1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCount), 8);
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(gameObject), gameObject);
+            // Arrange
+            var mockUObject = new Mock<IUObject>();
+            int direction = 1;
+            int directionsCountPerStep = 1;
+            int directionsCount = 8;
 
-            Assert.Throws<KeyNotFoundException>(rotateCommand.Execute);
-        }
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(direction);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Returns(directionsCountPerStep);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
+            mockUObject.Setup(x => x.SetProperty(nameof(IRotatableObject.Direction), It.IsAny<object>()));
 
-        [Fact]
-        public void DontSetDirectionsCount()
-        {
-            IUObject gameObject = new Spaceship();
-            gameObject.SetProperty(nameof(IRotatableObject.Direction), 1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCountPerStep), 1);
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(gameObject), gameObject);
+            mockUObject.Setup(x => x.GetProperty(propertyName)).Returns(invalidValue);
 
-            Assert.Throws<KeyNotFoundException>(rotateCommand.Execute);
-        }
-
-        [Fact]
-        public void SetDirectionsCountLessThan1()
-        {
-            IUObject gameObject = new Spaceship();
-            gameObject.SetProperty(nameof(IRotatableObject.Direction), 1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCountPerStep), 1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCount), -2);
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(gameObject), gameObject);
-
-            Assert.Throws<Exception>(rotateCommand.Execute);
-        }
-
-        [Fact]
-        public void SetDirectionsCountPerStepLessThan1()
-        {
-            IUObject gameObject = new Spaceship();
-            gameObject.SetProperty(nameof(IRotatableObject.Direction), 1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCountPerStep), -1);
-            gameObject.SetProperty(nameof(IRotatableObject.DirectionsCount), 0);
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(gameObject), gameObject);
-
+            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(mockUObject.Object), mockUObject.Object);
+            // Act & assert
             Assert.Throws<Exception>(rotateCommand.Execute);
         }
     }

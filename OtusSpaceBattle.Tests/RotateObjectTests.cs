@@ -19,85 +19,138 @@ namespace OtusSpaceBattle.Tests
         }
 
         [Fact]
-        public void CorrectlyRotateGameObject()
+        public void RotationTest()
         {
+
+            var testdata = new
+            {
+                DirectionsNumber = 90,
+                AngularVelocity = 100,
+                Direction = 10,
+                want = 20
+            };
+
+            int act = default;
+
             // Arrange
-            var mockUObject = new Mock<IUObject>();
-            int direction = 1;
-            int directionsCountPerStep = 1;
-            int directionsCount = 8;
-            int setDirection = direction;
+            var mock = new Mock<IRotatableObject>();
+            mock.Setup(move => move.GetAngularVelocity()).Returns(testdata.AngularVelocity);
+            mock.Setup(move => move.GetDirectionsNumber()).Returns(testdata.DirectionsNumber);
+            mock.Setup(move => move.GetDirection()).Returns(testdata.Direction);
+            mock.Setup(move => move.SetDirection(It.IsAny<int>())).Callback<int>((v) => act = v);
 
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(() => setDirection);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Returns(directionsCountPerStep);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
-            mockUObject.Setup(x => x.SetProperty(nameof(IRotatableObject.Direction), It.IsAny<object>()))
-                .Callback<string, object>((name, value) => setDirection = (int)value);
-
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(mockUObject.Object), mockUObject.Object);
-            int expectedDirection = 3;
             // Act
-            for (int i = 0; i < 10; i++)
-                rotateCommand.Execute();
+            RotateCommand command = new RotateCommand(mock.Object);
+            command.Execute();
+
             // Assert
-            Assert.Equal(expectedDirection, setDirection);
+            Assert.Equal(act, testdata.want);
         }
 
-        [Theory]
-        [InlineData(nameof(IRotatableObject.Direction))]
-        [InlineData(nameof(IRotatableObject.DirectionsCountPerStep))]
-        [InlineData(nameof(IRotatableObject.DirectionsCount))]
-        public void MissingRequiredPropertyThrowsException(string missingProperty)
+        [Fact]
+        public void RotationTest_WithoutAngularVelocity()
         {
+            var testdata = new
+            {
+                DirectionsNumber = 90,
+                AngularVelocity = 100,
+                Direction = 10,
+                want = 20
+            };
+
+            int act = default;
+
             // Arrange
-            var mockUObject = new Mock<IUObject>();
-            int direction = 1;
-            int directionsCountPerStep = 1;
-            int directionsCount = 8;
+            var mock = new Mock<IRotatableObject>();
+            mock.Setup(move => move.GetAngularVelocity()).Throws(new NotSupportedException());
+            mock.Setup(move => move.GetDirectionsNumber()).Returns(testdata.DirectionsNumber);
+            mock.Setup(move => move.GetDirection()).Returns(testdata.Direction);
+            mock.Setup(move => move.SetDirection(It.IsAny<int>())).Callback<int>((v) => act = v);
 
-            if (missingProperty != nameof(IRotatableObject.Direction))
-                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(direction);
-            else
-                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Throws<KeyNotFoundException>();
+            // Act
+            RotateCommand command = new RotateCommand(mock.Object);
 
-            if (missingProperty != nameof(IRotatableObject.DirectionsCountPerStep))
-                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Returns(directionsCountPerStep);
-            else
-                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Throws<KeyNotFoundException>();
-
-            if (missingProperty != nameof(IRotatableObject.DirectionsCount))
-                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
-            else
-                mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Throws<KeyNotFoundException>();
-
-            mockUObject.Setup(x => x.SetProperty(nameof(IRotatableObject.Direction), It.IsAny<object>()));
-
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(mockUObject.Object), mockUObject.Object);
-            // Act & Assert
-            Assert.Throws<KeyNotFoundException>(rotateCommand.Execute);
+            // Assert
+            Assert.Throws<NotSupportedException>(command.Execute);
         }
 
-        [Theory]
-        [InlineData(nameof(IRotatableObject.DirectionsCount), -2)]
-        [InlineData(nameof(IRotatableObject.DirectionsCountPerStep), -1)]
-        public void InvalidPropertyValuesThrowException(string propertyName, object invalidValue)
+        [Fact]
+        public void RotationTest_DirectionsNumber()
         {
+            var testdata = new
+            {
+                DirectionsNumber = 90,
+                AngularVelocity = 100,
+                Direction = 10,
+                want = 20
+            };
+
+            int act = default;
+
             // Arrange
-            var mockUObject = new Mock<IUObject>();
-            int direction = 1;
-            int directionsCountPerStep = 1;
-            int directionsCount = 8;
+            var mock = new Mock<IRotatableObject>();
+            mock.Setup(move => move.GetAngularVelocity()).Returns(testdata.AngularVelocity);
+            mock.Setup(move => move.GetDirectionsNumber()).Throws(new NotSupportedException());
+            mock.Setup(move => move.GetDirection()).Returns(testdata.Direction);
+            mock.Setup(move => move.SetDirection(It.IsAny<int>())).Callback<int>((v) => act = v);
 
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(direction);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Returns(directionsCountPerStep);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
-            mockUObject.Setup(x => x.SetProperty(nameof(IRotatableObject.Direction), It.IsAny<object>()));
+            // Act
+            RotateCommand command = new RotateCommand(mock.Object);
 
-            mockUObject.Setup(x => x.GetProperty(propertyName)).Returns(invalidValue);
+            // Assert
+            Assert.Throws<NotSupportedException>(command.Execute);
+        }
 
-            ICommand rotateCommand = new RotateCommand(new RotatingObjectAdapter(mockUObject.Object), mockUObject.Object);
-            // Act & assert
-            Assert.Throws<Exception>(rotateCommand.Execute);
+        [Fact]
+        public void RotationTest_GetDirection()
+        {
+            var testdata = new
+            {
+                DirectionsNumber = 90,
+                AngularVelocity = 100,
+                Direction = 10,
+                want = 20
+            };
+
+            int act = default;
+
+            // Arrange
+            var mock = new Mock<IRotatableObject>();
+            mock.Setup(move => move.GetAngularVelocity()).Returns(testdata.AngularVelocity);
+            mock.Setup(move => move.GetDirectionsNumber()).Returns(testdata.DirectionsNumber);
+            mock.Setup(move => move.GetDirection()).Throws(new NotSupportedException());
+            mock.Setup(move => move.SetDirection(It.IsAny<int>())).Callback<int>((v) => act = v);
+
+            // Act
+            RotateCommand command = new RotateCommand(mock.Object);
+
+            // Assert
+            Assert.Throws<NotSupportedException>(command.Execute);
+        }
+
+        [Fact]
+        public void RotationTest_NoChangeDirection()
+        {
+            var testdata = new
+            {
+                DirectionsNumber = 90,
+                AngularVelocity = 100,
+                Direction = 10,
+                want = 20
+            };
+
+            // Arrange
+            var mock = new Mock<IRotatableObject>();
+            mock.Setup(move => move.GetAngularVelocity()).Returns(testdata.AngularVelocity);
+            mock.Setup(move => move.GetDirectionsNumber()).Returns(testdata.DirectionsNumber);
+            mock.Setup(move => move.GetDirection()).Returns(testdata.Direction);
+            mock.Setup(move => move.SetDirection(It.IsAny<int>())).Throws(new Exception());
+
+            // Act
+            RotateCommand command = new RotateCommand(mock.Object);
+
+            // Assert
+            Assert.Throws<Exception>(command.Execute);
         }
     }
 }

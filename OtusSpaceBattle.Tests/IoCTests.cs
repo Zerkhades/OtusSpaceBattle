@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using System.Numerics;
 
 namespace OtusSpaceBattle.Tests
 {
@@ -60,9 +61,9 @@ namespace OtusSpaceBattle.Tests
         [Fact]
         public void MultiThreadedScopesWorkIndependently()
         {
+            string? resultA = null, resultB = null;
             IoC.Resolve("Scopes.New", "scopeA");
             IoC.Resolve("Scopes.New", "scopeB");
-            string resultA = null, resultB = null;
             var t1 = new Thread(() =>
             {
                 IoC.Resolve("Scopes.Current", "scopeA");
@@ -85,35 +86,40 @@ namespace OtusSpaceBattle.Tests
         public void CanRegisterAndResolveMoveCommand()
         {
             var mockUObject = new Moq.Mock<IUObject>();
-            mockUObject.Setup(x => x.GetProperty(nameof(IMovableObject.Position))).Returns((12, 5));
+            var mockMovable = mockUObject.As<IMovableObject>();
+            mockMovable.Setup(x => x.GetPosition()).Returns(new Vector2(12, 5));
+            mockMovable.Setup(x => x.SetPosition(Moq.It.IsAny<Vector2>())).Callback<Vector2>(v => { });
+            mockUObject.Setup(x => x.GetProperty(nameof(IMovableObject.GetPosition))).Returns(new Vector2(12, 5));
             mockUObject.Setup(x => x.GetProperty(Constants.Velocity)).Returns(10);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(8);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(3);
-            (int, int) actualSetPosition = default;
-            mockUObject.Setup(x => x.SetProperty(nameof(IMovableObject.Position), Moq.It.IsAny<object>()))
-                .Callback<string, object>((name, value) => actualSetPosition = ((int, int))value);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.GetAngularVelocity))).Returns(8);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.GetDirection))).Returns(3);
+            Vector2 actualSetPosition = default;
+            mockMovable.Setup(x => x.SetPosition(Moq.It.IsAny<Vector2>())).Callback<Vector2>(v => actualSetPosition = v);
 
             IoC.Resolve("IoC.Register", "move", new Func<object[], object>(args =>
-                new MoveCommand(new MovingObjectAdapter((IUObject)args[0]), (IUObject)args[0])
+                new MoveCommand((IMovableObject)args[0])
             ));
             var moveCommand = (ICommand)IoC.Resolve("move", mockUObject.Object);
             moveCommand.Execute();
-            Assert.Equal((5, 12), actualSetPosition);
+            Assert.Equal(new Vector2(12,5), actualSetPosition);
         }
 
         [Fact]
         public void CanRegisterAndResolveRotateCommand()
         {
             var mockUObject = new Moq.Mock<IUObject>();
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(3);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Returns(2);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(8);
+            var mockRotatable = mockUObject.As<IRotatableObject>();
+            mockRotatable.Setup(x => x.GetDirection()).Returns(3);
+            mockRotatable.Setup(x => x.GetDirectionsNumber()).Returns(8);
+            mockRotatable.Setup(x => x.GetAngularVelocity()).Returns(2);
             int actualDirection = 0;
-            mockUObject.Setup(x => x.SetProperty(nameof(IRotatableObject.Direction), Moq.It.IsAny<object>()))
-                .Callback<string, object>((name, value) => actualDirection = (int)value);
+            mockRotatable.Setup(x => x.SetDirection(Moq.It.IsAny<int>())).Callback<int>(v => actualDirection = v);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.GetDirection))).Returns(3);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.GetDirectionsNumber))).Returns(8);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.GetAngularVelocity))).Returns(2);
 
             IoC.Resolve("IoC.Register", "rotate", new Func<object[], object>(args =>
-                new RotateCommand(new RotatingObjectAdapter((IUObject)args[0]), (IUObject)args[0])
+                new RotateCommand((IRotatableObject)args[0])
             ));
             var rotateCommand = (ICommand)IoC.Resolve("rotate", mockUObject.Object);
             rotateCommand.Execute();
@@ -124,33 +130,37 @@ namespace OtusSpaceBattle.Tests
         public void CanRegisterAndResolveMacroCommand()
         {
             var mockUObject = new Moq.Mock<IUObject>();
-            mockUObject.Setup(x => x.GetProperty(nameof(IMovableObject.Position))).Returns((12, 5));
-            mockUObject.Setup(x => x.GetProperty(Constants.Velocity)).Returns(10);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCountPerStep))).Returns(2);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(8);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(3);
-            (int, int) actualSetPosition = default;
-            mockUObject.Setup(x => x.SetProperty(nameof(IMovableObject.Position), Moq.It.IsAny<object>()))
-                .Callback<string, object>((name, value) => actualSetPosition = ((int, int))value);
+            var mockMovable = mockUObject.As<IMovableObject>();
+            var mockRotatable = mockUObject.As<IRotatableObject>();
+            mockMovable.Setup(x => x.GetPosition()).Returns(new Vector2(12, 5));
+            mockRotatable.Setup(x => x.GetDirectionsNumber()).Returns(8);
+            mockRotatable.Setup(x => x.GetAngularVelocity()).Returns(2);
+            mockRotatable.Setup(x => x.GetDirection()).Returns(3);
+            Vector2 actualSetPosition = default;
+            mockMovable.Setup(x => x.SetPosition(Moq.It.IsAny<Vector2>())).Callback<Vector2>(v => actualSetPosition = v);
             int actualDirection = 0;
-            mockUObject.Setup(x => x.SetProperty(nameof(IRotatableObject.Direction), Moq.It.IsAny<object>()))
-                .Callback<string, object>((name, value) => actualDirection = (int)value);
+            mockRotatable.Setup(x => x.SetDirection(Moq.It.IsAny<int>())).Callback<int>(v => actualDirection = v);
+            mockUObject.Setup(x => x.GetProperty(nameof(IMovableObject.GetPosition))).Returns(new Vector2(12, 5));
+            mockUObject.Setup(x => x.GetProperty(Constants.Velocity)).Returns(10);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.GetDirectionsNumber))).Returns(8);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.GetAngularVelocity))).Returns(2);
+            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.GetDirection))).Returns(3);
 
-            IoC.Resolve("IoC.Register", "move", new Func<object[], object>(args =>
-                new MoveCommand(new MovingObjectAdapter((IUObject)args[0]), (IUObject)args[0])
+            IoC.Resolve("IoC.Register", "move", new Func<object[],object>(args =>
+                new MoveCommand((IMovableObject)args[0])
             ));
             IoC.Resolve("IoC.Register", "rotate", new Func<object[], object>(args =>
-                new RotateCommand(new RotatingObjectAdapter((IUObject)args[0]), (IUObject)args[0])
+                new RotateCommand((IRotatableObject)args[0])
             ));
             IoC.Resolve("IoC.Register", "macro", new Func<object[], object>(args =>
                 new MacroCommand(new List<ICommand> {
-                    (ICommand)IoC.Resolve("move", args[0]),
-                    (ICommand)IoC.Resolve("rotate", args[0])
+                    (ICommand)IoC.Resolve("move", args),
+                    (ICommand)IoC.Resolve("rotate", args)
                 })
             ));
             var macroCommand = (ICommand)IoC.Resolve("macro", mockUObject.Object);
             macroCommand.Execute();
-            Assert.Equal((5, 12), actualSetPosition);
+            Assert.Equal(new Vector2(12, 5), actualSetPosition);
             Assert.Equal(5, actualDirection);
         }
     }

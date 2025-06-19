@@ -11,20 +11,13 @@ namespace OtusSpaceBattle.Commands
     public class RotateCommand : ICommand
     {
         private readonly IRotatableObject rotatableObject;
-        private readonly IUObject gameObject;
-        public RotateCommand(IRotatableObject ro, IUObject go)
+        public RotateCommand(IRotatableObject ro)
         {
             rotatableObject = ro;
-            gameObject = go;
         }
-        public void Execute()
-        {
-            if (rotatableObject.DirectionsCountPerStep < 1)
-                throw new Exception("Кол-во поворотов за шаг не может быть меньше 1");
-            if (rotatableObject.DirectionsCount < 1)
-                throw new Exception("Общее кол-во углов не может быть меньше 1");
-            gameObject.SetProperty(nameof(rotatableObject.Direction),
-                (rotatableObject.Direction + rotatableObject.DirectionsCountPerStep) % rotatableObject.DirectionsCount);
-        }
+        public void Execute() => 
+            rotatableObject.SetDirection((rotatableObject.GetDirection() +
+                rotatableObject.GetAngularVelocity()) %
+                rotatableObject.GetDirectionsNumber());
     }
 }

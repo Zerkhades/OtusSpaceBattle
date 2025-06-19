@@ -6,6 +6,7 @@ using OtusSpaceBattle.Interfaces;
 using OtusSpaceBattle.Models;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using Xunit;
 
 namespace OtusSpaceBattle.Tests
@@ -17,83 +18,107 @@ namespace OtusSpaceBattle.Tests
         }
 
         [Fact]
-        public void CorrectlyMoveGameObject()
+        public void MovementTest()
         {
-            // Arrange
-            var mockUObject = new Mock<IUObject>();
-            var position = (12, 5);
-            var direction = 3;
-            var directionsCount = 8;
-            var speed = 10;
-            
-            mockUObject.Setup(x => x.GetProperty(nameof(IMovableObject.Position))).Returns(position);
-            mockUObject.Setup(x => x.GetProperty(nameof(Constants.Velocity))).Returns(speed);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(direction);
-            
-            (int, int) actualSetPosition = default;
-            mockUObject.Setup(x => x.SetProperty(nameof(IMovableObject.Position), It.IsAny<object>()))
-                .Callback<string, object>((name, value) => actualSetPosition = ((int, int))value);
+            // Для объекта, находящегося в точке (12, 5) и движущегося со скоростью (-7, 3) движение меняет положение объекта на (5, 8)
 
-            ICommand moveCommand = new MoveCommand(new MovingObjectAdapter(mockUObject.Object), mockUObject.Object);
+            var testdata = new
+            {
+                position = new Vector2(12, 5),
+                velocity = new Vector2(-7, 3),
+                want = new Vector2(5, 8)
+            };
+
+            Vector2 act = default;
+
+            // Arrange
+            var mock = new Mock<IMovableObject>();
+            mock.Setup(move => move.GetPosition()).Returns(testdata.position);
+            mock.Setup(move => move.GetVelocity()).Returns(testdata.velocity);
+            mock.Setup(move => move.SetPosition(It.IsAny<Vector2>())).Callback<Vector2>((v) => act = v);
+
             // Act
-            moveCommand.Execute();
+            MoveCommand command = new MoveCommand(mock.Object);
+            command.Execute();
 
             // Assert
-            var expectedPosition = (5, 12);
-            Assert.Equal(expectedPosition, actualSetPosition);
-        }
-
-        [Theory]
-        [InlineData(nameof(IMovableObject.Position))]
-        [InlineData(nameof(Constants.Velocity))]
-        public void MissingRequiredPropertyThrowsException(string missingProperty)
-        {
-            // Arrange
-            var mockUObject = new Mock<IUObject>();
-            var position = (12, 5);
-            var direction = 3;
-            var directionsCount = 8;
-            var speed = 10;
-
-            if (missingProperty != nameof(IMovableObject.Position))
-                mockUObject.Setup(x => x.GetProperty(nameof(IMovableObject.Position))).Returns(position);
-            else
-                mockUObject.Setup(x => x.GetProperty(nameof(IMovableObject.Position))).Throws<KeyNotFoundException>();
-
-            if (missingProperty != nameof(Constants.Velocity))
-                mockUObject.Setup(x => x.GetProperty(nameof(Constants.Velocity))).Returns(speed);
-            else
-                mockUObject.Setup(x => x.GetProperty(nameof(Constants.Velocity))).Throws<KeyNotFoundException>();
-
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(direction);
-
-            ICommand moveCommand = new MoveCommand(new MovingObjectAdapter(mockUObject.Object), mockUObject.Object);
-
-            // Act & assert
-            Assert.Throws<KeyNotFoundException>(moveCommand.Execute);
+            Assert.Equal(act, testdata.want);
         }
 
         [Fact]
-        public void InvalidDirectionsCountThrowsException()
+        public void MovementTest_WithoutPosition()
         {
+            // Попытка сдвинуть объект, у которого невозможно прочитать положение в пространстве, приводит к ошибке
+
+            var testdata = new
+            {
+                position = new Vector2(12, 5),
+                velocity = new Vector2(-7, 3),
+                want = new Vector2(5, 8)
+            };
+
             // Arrange
-            var mockUObject = new Mock<IUObject>();
-            var position = (12, 5);
-            var direction = 3;
-            var directionsCount = 0;
-            var speed = 10;
+            var mock = new Mock<IMovableObject>();
+            mock.Setup(move => move.GetPosition()).Throws(new NotSupportedException());
+            mock.Setup(move => move.GetVelocity()).Returns(testdata.velocity);
+            mock.Setup(move => move.SetPosition(It.IsAny<Vector2>()));
 
-            mockUObject.Setup(x => x.GetProperty(nameof(IMovableObject.Position))).Returns(position);
-            mockUObject.Setup(x => x.GetProperty(Constants.Velocity)).Returns(speed);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.DirectionsCount))).Returns(directionsCount);
-            mockUObject.Setup(x => x.GetProperty(nameof(IRotatableObject.Direction))).Returns(direction);
+            // Act
+            MoveCommand command = new MoveCommand(mock.Object);
 
-            ICommand moveCommand = new MoveCommand(new MovingObjectAdapter(mockUObject.Object), mockUObject.Object);
+            // Assert
+            Assert.Throws<NotSupportedException>(command.Execute);
+        }
 
-            // Act & assert
-            Assert.Throws<OverflowException>(moveCommand.Execute);
+        [Fact]
+        public void MovementTest_WithoutVelocity()
+        {
+            // Попытка сдвинуть объект, у которого невозможно прочитать значение мгновенной скорости, приводит к ошибке
+
+            var testdata = new
+            {
+                position = new Vector2(12, 5),
+                velocity = new Vector2(-7, 3),
+                want = new Vector2(5, 8)
+            };
+
+            // Arrange
+            var mock = new Mock<IMovableObject>();
+            mock.Setup(move => move.GetPosition()).Returns(testdata.position);
+            mock.Setup(move => move.GetVelocity()).Throws(new NotSupportedException());
+            mock.Setup(move => move.SetPosition(It.IsAny<Vector2>()));
+
+            // Act
+            MoveCommand command = new MoveCommand(mock.Object);
+
+            // Assert
+            Assert.Throws<NotSupportedException>(command.Execute);
+        }
+
+
+        [Fact]
+        public void MovementTest_NoChangePosition()
+        {
+            // Попытка сдвинуть объект, у которого невозможно изменить положение в пространстве, приводит к ошибке
+
+            var testdata = new
+            {
+                position = new Vector2(12, 5),
+                velocity = new Vector2(-7, 3),
+                want = new Vector2(5, 8)
+            };
+
+            // Arrange
+            var mock = new Mock<IMovableObject>();
+            mock.Setup(move => move.GetPosition()).Returns(testdata.position);
+            mock.Setup(move => move.GetVelocity()).Returns(testdata.velocity);
+            mock.Setup(move => move.SetPosition(It.IsAny<Vector2>())).Throws(new Exception());
+
+            // Act
+            MoveCommand command = new MoveCommand(mock.Object);
+
+            // Assert
+            Assert.Throws<Exception>(command.Execute);
         }
     }
 }

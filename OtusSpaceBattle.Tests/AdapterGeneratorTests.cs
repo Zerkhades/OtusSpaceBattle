@@ -32,7 +32,7 @@ namespace OtusSpaceBattle.Tests
             Assert.Contains("public void SetVector(Vector2 v)", code);
             Assert.Contains("public void DoSomething()", code);
 
-            // Проверка IoC ключей с полным именем интерфейса
+            // РџСЂРѕРІРµСЂРєР° IoC РєР»СЋС‡РµР№ СЃ РїРѕР»РЅС‹Рј РёРјРµРЅРµРј РёРЅС‚РµСЂС„РµР№СЃР°
             Assert.Contains("OtusSpaceBattle.Tests.ITestInterface:int.get", code);
             Assert.Contains("OtusSpaceBattle.Tests.ITestInterface:int.set", code);
             Assert.Contains("OtusSpaceBattle.Tests.ITestInterface:vector.get", code);

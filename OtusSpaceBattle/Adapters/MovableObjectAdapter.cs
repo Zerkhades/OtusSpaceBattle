@@ -1,16 +1,14 @@
-﻿using OtusSpaceBattle.Infrastructure;
+using OtusSpaceBattle.Infrastructure;
 using OtusSpaceBattle.Interfaces;
 using System.Numerics;
 
-
 namespace OtusSpaceBattle.Adapters
 {
-    [Obsolete("Use MovableAdapter instead")]
-    public class MovingObjectAdapter : IMovableObject
+    public class MovableObjectAdapter : OtusSpaceBattle.Interfaces.IMovableObject
     {
         private readonly IUObject gameObject;
 
-        public MovingObjectAdapter(IUObject gameObject)
+        public MovableObjectAdapter(IUObject gameObject)
         {
             this.gameObject = gameObject;
         }
@@ -29,5 +27,6 @@ namespace OtusSpaceBattle.Adapters
         {
             IoC.Resolve<ICommand>("OtusSpaceBattle.Interfaces.IMovableObject:position.set", gameObject, newV).Execute();
         }
+
     }
 }

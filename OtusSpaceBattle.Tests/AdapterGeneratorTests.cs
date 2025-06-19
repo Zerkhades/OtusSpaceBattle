@@ -25,7 +25,7 @@ namespace OtusSpaceBattle.Tests
             // Act
             var code = AdapterGenerator.GenerateAdapterCode(typeof(ITestInterface));
 
-            // Assert: сигнатуры методов
+            // Assert
             Assert.Contains("public int GetInt()", code);
             Assert.Contains("public void SetInt(int value)", code);
             Assert.Contains("public Vector2 GetVector()", code);
@@ -50,7 +50,7 @@ namespace OtusSpaceBattle.Tests
             // Act
             AdapterGenerator.GenerateAndSaveAllAdapters(tempDir, Assembly.GetExecutingAssembly());
 
-            // Assert: файл для ITestInterface должен быть создан
+            // Assert
             var filePath = Path.Combine(tempDir, "TestInterfaceAdapter.cs");
             Assert.True(File.Exists(filePath), $"File {filePath} should exist");
             var fileContent = File.ReadAllText(filePath);

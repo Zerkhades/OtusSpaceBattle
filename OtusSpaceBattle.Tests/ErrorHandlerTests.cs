@@ -177,41 +177,36 @@ namespace OtusSpaceBattle.Tests
         {
             var testdata = new
             {
-                setPosition = new ValueTuple<int, int>(12, 5),
-                setVelocity = new ValueTuple<int, int>(-7, 3),
+                setPosition = new Vector2(12, 5),
+                setVelocity = new Vector2(-7, 3),
                 setFuelTank = 100,                  // Объем бака
                 setFuel = 50,                       // Топлива в баке
                 setFuelConsumption = 10,            // Топлива сжигается при перемещении
-                wantPosition = new ValueTuple<int, int>(5, 8),
+                wantPosition = new Vector2(5, 8),
                 wantFuel = 40,
             };
 
             // Arrange
-            var actPosition = new ValueTuple<int, int>(0, 0);
+            var actPosition = Vector2.Zero;
             var actFuel = 0;
 
             var mockFuelCheckable = new Mock<ICheckFuel>();
             mockFuelCheckable.Setup(move => move.CheckFuel()).Returns(testdata.setFuel >= testdata.setFuelConsumption);
 
             var mockMovable = new Mock<IMovableObject>();
-            mockMovable.SetupProperty(m => m.Position, testdata.setPosition);
-            mockMovable.Setup(m => m.Velocity).Returns(testdata.setVelocity);
-            mockMovable.SetupSet(m => m.Position = It.IsAny<ValueTuple<int, int>>())
-                .Callback<ValueTuple<int, int>>(p => actPosition = p);
+            mockMovable.Setup(m => m.GetPosition()).Returns(testdata.setPosition);
+            mockMovable.Setup(m => m.GetVelocity()).Returns(testdata.setVelocity);
+            mockMovable.Setup(m => m.SetPosition(It.IsAny<Vector2>())).Callback<Vector2>((p) => actPosition = p);
 
             var mockFuelBurnable = new Mock<IFuelableObject>();
             mockFuelBurnable.Setup(m => m.BurnFuel()).Callback(() => actFuel = testdata.setFuel - testdata.setFuelConsumption);
 
-            var mockUObject = new Mock<IUObject>();
-            // Setup SetProperty to update actPosition
-            mockUObject.Setup(x => x.SetProperty("Position", It.IsAny<object>()))
-                .Callback<string, object>((name, value) => actPosition = ((ValueTuple<int, int>)value));
-
             // Act
+            //var command = new MoveAndBurnFuelCommand(mockFuelCheckable.Object, mockMovable.Object, mockFuelBurnable.Object);
             List<ICommand> cmds = new List<ICommand>()
             {
                 new CheckFuelCommand(mockFuelCheckable.Object),
-                new MoveCommand(mockMovable.Object, mockUObject.Object),
+                new MoveCommand(mockMovable.Object),
                 new BurnFuelCommand(mockFuelBurnable.Object),
             };
 
@@ -219,8 +214,9 @@ namespace OtusSpaceBattle.Tests
             moveAndBurnFuelCommand.Execute();
 
             // Assert
-            Assert.Equal(testdata.wantPosition, actPosition);
-            Assert.Equal(testdata.wantFuel, actFuel);
+            Assert.Equal(actPosition, testdata.wantPosition);
+            Assert.Equal(actFuel, testdata.wantFuel);
+
         }
 
         [Fact]
@@ -228,15 +224,15 @@ namespace OtusSpaceBattle.Tests
         {
             var testdata = new
             {
-                setVelocity = 5,
-                wantVelocity = 5
+                setVelocity = new Vector2(5, 8),
+                wantVelocity = new Vector2(5, 8)
             };
 
-            var actVelocity = 0;
+            var actVelocity = Vector2.Zero;
 
             // Arrange
             var mock = new Mock<IChangeVelocity>();
-            mock.Setup(m => m.SetVelocity(It.IsAny<int>())).Callback<int>((v) => actVelocity = v);
+            mock.Setup(m => m.SetVelocity(It.IsAny<Vector2>())).Callback<Vector2>((p) => actVelocity = p);
 
             // Act
             var command = new ChangeVelocityCommand(mock.Object, testdata.setVelocity);
@@ -254,36 +250,28 @@ namespace OtusSpaceBattle.Tests
                 setAngularVelocity = 100,
                 setDirectionsNumber = 90,
                 setDirection = 100,
-                setVelocity = 5,
+                setVelocity = new Vector2(5, 8),
                 wantDirection = 20,
-                wantVelocity = 5,
+                wantVelocity = new Vector2(5, 8),
             };
 
             // Arrange
             var actDirection = 0;
-            var actVelocity = 0;
+            var actVelocity = Vector2.Zero;
 
             var mockRotable = new Mock<IRotatableObject>();
-            mockRotable.SetupProperty(m => m.Direction, testdata.setDirection);
-            mockRotable.SetupGet(m => m.DirectionsCountPerStep).Returns(testdata.setAngularVelocity);
-            mockRotable.SetupGet(m => m.DirectionsCount).Returns(testdata.setDirectionsNumber);
-            mockRotable.SetupSet(m => m.Direction = It.IsAny<int>()).Callback<int>(v => actDirection = v);
+            mockRotable.Setup(m => m.GetAngularVelocity()).Returns(testdata.setAngularVelocity);
+            mockRotable.Setup(m => m.GetDirectionsNumber()).Returns(testdata.setDirectionsNumber);
+            mockRotable.Setup(m => m.GetDirection()).Returns(testdata.setDirection);
+            mockRotable.Setup(m => m.SetDirection(It.IsAny<int>())).Callback<int>((v) => actDirection = v);
 
             var mockChangeVelocity = new Mock<IChangeVelocity>();
-            mockChangeVelocity.Setup(m => m.SetVelocity(It.IsAny<int>())).Callback<int>(v => actVelocity = v);
-
-            var mockUObject = new Mock<IUObject>();
-            mockUObject.Setup(x => x.SetProperty("Direction", It.IsAny<object>()))
-                .Callback<string, object>((name, value) => actDirection = (int)value);
-
-            mockUObject.Setup(x => x.GetProperty("Direction")).Returns(() => actDirection == 0 ? testdata.setDirection : actDirection);
-            mockUObject.Setup(x => x.GetProperty("DirectionsCountPerStep")).Returns(testdata.setAngularVelocity);
-            mockUObject.Setup(x => x.GetProperty("DirectionsCount")).Returns(testdata.setDirectionsNumber);
+            mockChangeVelocity.Setup(m => m.SetVelocity(It.IsAny<Vector2>())).Callback<Vector2>((p) => actVelocity = p);
 
             // Act
             List<ICommand> cmds = new List<ICommand>()
             {
-                new RotateCommand(mockRotable.Object, mockUObject.Object),
+                new RotateCommand(mockRotable.Object),
                 new ChangeVelocityCommand(mockChangeVelocity.Object, testdata.setVelocity),
             };
 
@@ -291,8 +279,8 @@ namespace OtusSpaceBattle.Tests
             rotateAndChangeVelocityCommand.Execute();
 
             // Assert
-            Assert.Equal(testdata.wantDirection, actDirection);
-            Assert.Equal(testdata.wantVelocity, actVelocity);
+            Assert.Equal(actDirection, testdata.wantDirection);
+            Assert.Equal(actVelocity, testdata.wantVelocity);
         }
     }
 }

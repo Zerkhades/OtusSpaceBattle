@@ -1,18 +1,15 @@
 ﻿using OtusSpaceBattle.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Numerics;
+
 
 namespace OtusSpaceBattle.Commands
 {
     public class ChangeVelocityCommand : ICommand
     {
         private readonly IChangeVelocity _changeVelocity;
-        private readonly int _velocity;
+        private readonly Vector2 _velocity;
 
-        public ChangeVelocityCommand(IChangeVelocity changeVelocity, int velocity)
+        public ChangeVelocityCommand(IChangeVelocity changeVelocity, Vector2 velocity)
         {
             _changeVelocity = changeVelocity;
             _velocity = velocity;

@@ -1,9 +1,7 @@
-﻿using OtusSpaceBattle.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using OtusSpaceBattle.Infrastructure;
+using OtusSpaceBattle.Interfaces;
+
+
 
 namespace OtusSpaceBattle.Adapters
 {
@@ -16,17 +14,24 @@ namespace OtusSpaceBattle.Adapters
             this.gameObject = gameObject;
         }
 
-        public int Direction
+        public int GetAngularVelocity()
         {
-            get => (int)gameObject.GetProperty(nameof(Direction));
-            set => gameObject.SetProperty(nameof(Direction), value % DirectionsCount);
+            return IoC.Resolve<int>("Spaceship.Operations.IMovable:position.get", gameObject);
         }
 
-        public int DirectionsCountPerStep =>
-            (int)gameObject.GetProperty(nameof(DirectionsCountPerStep));
+        public int GetDirection()
+        {
+            return IoC.Resolve<int>("Spaceship.Operations.IMovable:position.get", gameObject);
+        }
 
-        public int DirectionsCount =>
-            (int)gameObject.GetProperty(nameof(DirectionsCount));
+        public int GetDirectionsNumber()
+        {
+            return IoC.Resolve<int>("Spaceship.Operations.IMovable:position.get", gameObject);
+        }
 
+        public void SetDirection(int newV)
+        {
+            IoC.Resolve<int>("Spaceship.Operations.IRotatableObject:position.get", gameObject);
+        }
     }
 }
